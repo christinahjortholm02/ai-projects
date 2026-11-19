@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Episodely · TV Show Guide</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================================
+       1. DESIGN TOKENS – every colour and size lives here, in one place
+       ===================================================================== */
+    :root {
+      --bg:        #0e1116;
+      --surface:   #161b22;
+      --surface-2: #1f2630;
+      --border:    #2a313c;
+      --text:      #e6e9ee;
+      --muted:     #8b95a5;
+      --soft:      #b5bdc9;
+      --accent:    #3b82f6;
+      --accent-hover: #2563eb;
+      --success:   #22c55e;
+      --radius:    10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    button { font: inherit; }
+
+    /* =====================================================================
+       2. HEADER / NAVIGATION
+       ===================================================================== */
+    header {
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(14, 17, 22, 0.85);
+      backdrop-filter: blur(8px);
+    }
+    nav { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .logo {
+      font-weight: 700; font-size: 18px; letter-spacing: -0.02em;
+      display: flex; align-items: center; gap: 10px;
+      background: none; border: none; color: var(--text); cursor: pointer; padding: 0;
+    }
+    .logo-mark { width: 28px; height: 28px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-btn {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      padding: 7px 14px; border-radius: 8px; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-btn:hover { border-color: var(--muted); }
+    .count {
+      background: var(--accent); color: white; font-size: 12px; font-weight: 600;
+      min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: grid; place-items: center;
+    }
+
+    /* =====================================================================
+       3. HERO + SEARCH
+       ===================================================================== */
+    .hero { padding: 56px 0 32px; max-width: 760px; }
+    .eyebrow { color: var(--accent); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.1; letter-spacing: -0.03em; margin: 12px 0 14px; }
+    .hero p { color: var(--muted); font-size: 17px; line-height: 1.6; margin: 0 0 28px; }
+
+    /* Segmented control: Shows | Actors | IMDb ID */
+    .modes {
+      display: inline-flex; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 4px; margin-bottom: 12px;
+    }
+    .mode {
+      border: none; background: none; color: var(--muted); cursor: pointer;
+      padding: 8px 16px; border-radius: 7px; font-size: 14px; font-weight: 500;
+    }
+    .mode:hover { color: var(--text); }
+    .mode.active { background: var(--surface-2); color: var(--text); }
+
+    #search-form { display: flex; gap: 10px; }
+    .search-box {
+      flex: 1; display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0 16px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.2); }
+    .search-box svg { flex-shrink: 0; color: var(--muted); }
+    #search-input {
+      flex: 1; height: 50px; border: none; outline: none; background: transparent;
+      font: inherit; font-size: 16px; color: var(--text);
+    }
+    #search-input::placeholder { color: var(--muted); }
+
+    .btn {
+      border: none; cursor: pointer; font-weight: 600; font-size: 15px;
+      color: white; background: var(--accent); padding: 0 24px; height: 44px; border-radius: var(--radius);
+      display: inline-flex; align-items: center; gap: 8px; transition: background .15s;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    .btn.secondary:hover { border-color: var(--muted); background: var(--surface-2); }
+    .btn.saved { background: rgba(34,197,94,.12); color: var(--success); border: 1px solid rgba(34,197,94,.4); }
+    #search-form .btn { height: auto; }
+
+    .suggestions { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .suggestions span { color: var(--muted); font-size: 13px; margin-right: 4px; }
+    .chip {
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all .15s;
+    }
+    .chip:hover { color: var(--text); border-color: var(--muted); }
+    .chip small { color: var(--accent); margin-left: 4px; }
+
+    /* =====================================================================
+       4. STATUS (loading / errors)
+       ===================================================================== */
+    #status { color: var(--muted); font-size: 15px; margin: 8px 0 24px; display: flex; align-items: center; gap: 12px; min-height: 22px; }
+    .spinner {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .back {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 14px; padding: 0; margin-bottom: 18px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .back:hover { color: var(--text); }
+
+    .page-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+    .page-title h2 { font-size: 24px; margin: 0; letter-spacing: -0.02em; }
+    .page-title span { color: var(--muted); font-size: 14px; }
+
+    /* =====================================================================
+       5. SHOW PAGE HERO (with background image)
+       ===================================================================== */
+    .show-hero {
+      position: relative; overflow: hidden;
+      border: 1px solid var(--border); border-radius: 14px; margin-bottom: 20px;
+      background: var(--surface);
+      animation: fadeIn .3s ease;
+    }
+    .show-hero .backdrop {
+      position: absolute; inset: 0; background-size: cover; background-position: center top;
+      opacity: .22; filter: blur(2px);
+    }
+    .show-hero .backdrop::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, var(--surface) 25%, rgba(22,27,34,.6) 100%);
+    }
+    .show-hero .inner { position: relative; display: grid; grid-template-columns: 200px 1fr; gap: 32px; padding: 28px; }
+    .show-hero img.poster { width: 100%; border-radius: 8px; display: block; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+    .show-hero h2 { font-size: 32px; letter-spacing: -0.02em; margin: 0 0 14px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 18px; }
+    .meta div { font-size: 13px; color: var(--muted); }
+    .meta strong { display: block; color: var(--text); font-size: 15px; font-weight: 600; margin-top: 2px; }
+    .genres { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+    .genre { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px; background: var(--surface-2); color: var(--muted); }
+    .summary { color: var(--soft); line-height: 1.65; margin: 0 0 22px; max-width: 680px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* "Next episode" banner */
+    .next-ep {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.35);
+      border-radius: var(--radius); padding: 14px 18px; margin-bottom: 28px;
+    }
+    .next-ep .label { color: var(--accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .next-ep .title { font-weight: 600; }
+    .next-ep .when { color: var(--muted); font-size: 14px; margin-left: auto; }
+
+    /* =====================================================================
+       6. TABS (sub-navigation + season tabs share one underline style)
+       ===================================================================== */
+    .tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .tab {
+      border: none; background: none; cursor: pointer; font-size: 14px; font-weight: 500;
+      color: var(--muted); padding: 14px; white-space: nowrap;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tab .n { color: var(--muted); font-weight: 400; margin-left: 4px; }
+    .tabs.small .tab { padding: 10px 12px; font-size: 13px; }
+
+    /* =====================================================================
+       7. CARD GRIDS (episodes, people, shows, images)
+       ===================================================================== */
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin-bottom: 72px; }
+    .grid.people { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .grid.shows  { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; transition: border-color .15s, transform .15s;
+      animation: fadeIn .3s ease both; cursor: pointer; position: relative;
+      text-align: left; color: inherit; padding: 0; width: 100%;
+    }
+    .card:hover { border-color: #3a4352; transform: translateY(-2px); }
+    .card .thumb { aspect-ratio: 16 / 9; background: var(--surface-2); position: relative; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+    .card .thumb.portrait { aspect-ratio: 2 / 3; }
+    .card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .badge {
+      position: absolute; bottom: 8px; left: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em;
+      background: rgba(0,0,0,.75); color: white; padding: 3px 8px; border-radius: 4px;
+    }
+    .card .body { padding: 12px 14px 14px; }
+    .card h4 { font-size: 15px; font-weight: 600; margin: 0 0 4px; line-height: 1.35; }
+    .card .info { font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+    .remove {
+      position: absolute; top: 8px; right: 8px; z-index: 2;
+      width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(0,0,0,.7); color: white; font-size: 16px; line-height: 1;
+    }
+    .remove:hover { background: #dc2626; }
+
+    /* Gallery */
+    .gallery { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); margin-bottom: 72px; }
+    .gallery a { display: block; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); position: relative; background: var(--surface-2); }
+    .gallery img { width: 100%; height: 180px; object-fit: cover; display: block; transition: transform .2s; }
+    .gallery a:hover img { transform: scale(1.04); }
+
+    /* =====================================================================
+       8. TABLES (seasons) + CREW LIST
+       ===================================================================== */
+    .table-wrap { overflow-x: auto; margin-bottom: 72px; border: 1px solid var(--border); border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--muted); font-weight: 500; background: var(--surface); }
+    tr:last-child td { border-bottom: none; }
+    td.link { color: var(--accent); cursor: pointer; }
+
+    .crew { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin-bottom: 72px; }
+    .crew-group { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+    .crew-group h4 { margin: 0 0 10px; font-size: 13px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+    .crew-group button { display: block; background: none; border: none; color: var(--text); padding: 4px 0; cursor: pointer; font-size: 14px; }
+    .crew-group button:hover { color: var(--accent); }
+
+    /* =====================================================================
+       9. ACTOR PAGE HEADER
+       ===================================================================== */
+    .person-head {
+      display: grid; grid-template-columns: 160px 1fr; gap: 28px; align-items: center;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 32px;
+      animation: fadeIn .3s ease;
+    }
+    .person-head img { width: 100%; border-radius: 8px; display: block; }
+    .person-head .no-img { aspect-ratio: 2/3; background: var(--surface-2); border-radius: 8px; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+    .person-head h2 { font-size: 30px; margin: 0 0 14px; letter-spacing: -0.02em; }
+
+    .empty { text-align: center; color: var(--muted); padding: 60px 20px; border: 1px dashed var(--border); border-radius: 14px; margin-bottom: 72px; }
+    .empty strong { display: block; color: var(--text); font-size: 17px; margin-bottom: 6px; }
+
+    /* =====================================================================
+       10. EPISODE POPUP (modal)
+       ===================================================================== */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 50;
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .overlay.open { display: flex; animation: fadeIn .2s ease; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; position: relative;
+    }
+    .modal .close {
+      position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; border-radius: 50%;
+      border: none; background: rgba(0,0,0,.7); color: white; font-size: 20px; cursor: pointer;
+    }
+    .modal .hero-img { aspect-ratio: 16/9; background: var(--surface-2); }
+    .modal .hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .modal .content { padding: 22px 26px 26px; }
+    .modal .code { color: var(--accent); font-size: 13px; font-weight: 600; letter-spacing: .04em; }
+    .modal h3 { font-size: 24px; margin: 6px 0 8px; letter-spacing: -0.02em; }
+    .modal .info { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .modal p { color: var(--soft); line-height: 1.65; margin: 0 0 20px; }
+    .modal h5 { margin: 0 0 10px; font-size: 13px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+    .guest-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .guest { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; color: var(--text); cursor: pointer; }
+    .guest:hover { border-color: var(--accent); }
+    .guest span { color: var(--muted); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; padding: 24px 0 32px; }
+    footer a { color: var(--text); }
+
+    @media (max-width: 700px) {
+      .show-hero .inner, .person-head { grid-template-columns: 1fr; }
+      .show-hero img.poster, .person-head img { max-width: 160px; }
+      #search-form { flex-direction: column; }
+      #search-form .btn { height: 48px; justify-content: center; }
+      .nav-links a { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== HEADER ===================== -->
+  <header>
+    <div class="container">
+      <nav>
+        <button class="logo" id="home-btn">
+          <div class="logo-mark">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M3 1.5v9l7.5-4.5z"/></svg>
+          </div>
+          Episodely
+        </button>
+        <div class="nav-links">
+          <a href="https://www.tvmaze.com/api" target="_blank">API by TVmaze</a>
+          <button class="nav-btn" id="watchlist-btn">
+            Watchlist <span class="count" id="watch-count">0</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ===================== HERO + SEARCH ===================== -->
+    <section class="hero">
+      <div class="eyebrow">TV Show Guide</div>
+      <h1>Find any show, actor or episode.</h1>
+      <p>Search by show title, actor name or IMDb ID. Browse episodes, cast, crew and seasons, and save shows to your watchlist.</p>
+
+      <div class="modes" id="modes">
+        <button class="mode active" data-mode="shows">Shows</button>
+        <button class="mode" data-mode="actors">Actors</button>
+        <button class="mode" data-mode="imdb">IMDb ID</button>
+      </div>
+
+      <form id="search-form">
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="search-input" type="text" autocomplete="off" autofocus>
+        </div>
+        <button class="btn" type="submit">Search</button>
+      </form>
+
+      <div class="suggestions">
+        <span>Try:</span>
+        <button class="chip" data-mode="shows"  data-q="The Big Bang Theory">The Big Bang Theory <small>Show</small></button>
+        <button class="chip" data-mode="shows"  data-q="Breaking Bad">Breaking Bad <small>Show</small></button>
+        <button class="chip" data-mode="actors" data-q="Jim Parsons">Jim Parsons <small>Actor</small></button>
+        <button class="chip" data-mode="imdb"   data-q="tt0903747">tt0903747 <small>IMDb</small></button>
+      </div>
+    </section>
+
+    <div id="status"></div>
+    <div id="results"></div>
+  </main>
+
+  <footer>
+    <div class="container">Data provided by <a href="https://www.tvmaze.com" target="_blank">TVmaze.com</a></div>
+  </footer>
+
+  <!-- ===================== EPISODE POPUP ===================== -->
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       SETUP
+       ===================================================================== */
+    const API = "https://api.tvmaze.com";
+
+    const form    = document.getElementById("search-form");
+    const input   = document.getElementById("search-input");
+    const status  = document.getElementById("status");
+    const results = document.getElementById("results");
+    const overlay = document.getElementById("overlay");
+    const modal   = document.getElementById("modal");
+
+    // The three search modes and the placeholder text for each
+    const MODES = {
+      shows:  "Search for a show, e.g. The Big Bang Theory",
+      actors: "Search for an actor, e.g. Jim Parsons",
+      imdb:   "Paste an IMDb ID or link, e.g. tt0903747",
+    };
+    let mode = "shows";
+
+    // "history" is a list of functions that each redraw one page.
+    // Going "Back" means removing the last one and running the one before it.
+    let history = [];
+
+
+    /* =====================================================================
+       HELPERS
+       ===================================================================== */
+
+    // Fetch a TVmaze URL and return the JSON. Returns null when TVmaze says 404 (= not found).
+    async function getJSON(path) {
+      const response = await fetch(API + path);
+      if (response.status === 404) return null;
+      if (response.status === 429) throw new Error("Too many requests – wait a few seconds and try again.");
+      if (!response.ok) throw new Error("TVmaze returned error " + response.status);
+      return response.json();
+    }
+
+    // Make text safe to put inside HTML ("<" becomes "&lt;" etc.)
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    // TVmaze summaries contain HTML like "<p><b>Hi</b></p>". DOMParser reads it safely and gives us plain text.
+    function plainText(html) {
+      if (!html) return "";
+      return new DOMParser().parseFromString(html, "text/html").body.textContent;
+    }
+
+    function pad(n) { return String(n).padStart(2, "0"); }                       // 5 → "05"
+
+    function formatDate(d) {                                                      // "2007-09-24" → "24 Sept 2007"
+      if (!d) return "TBA";
+      return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    function episodeCode(ep) { return `S${pad(ep.season)} · E${ep.number ? pad(ep.number) : "SP"}`; }
+
+    function years(show) {
+      if (!show.premiered) return "—";
+      return show.premiered.slice(0, 4) + (show.ended ? "–" + show.ended.slice(0, 4) : "–present");
+    }
+
+    function setLoading(message) { status.innerHTML = `<div class="spinner"></div>${esc(message)}`; }
+    function setStatus(message)  { status.textContent = message; }
+    function clearStatus()       { status.innerHTML = ""; }
+
+    // Runs an async function and shows any error in the status bar instead of crashing
+    async function safely(fn) {
+      try { await fn(); }
+      catch (error) { setStatus("Something went wrong: " + error.message); }
+    }
+
+    // Open a new page: remember how to draw it (for Back), then draw it
+    function navigate(renderFn, fresh = false) {
+      if (fresh) history = [];
+      history.push(renderFn);
+      renderFn();
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function goBack() {
+      history.pop();
+      const previous = history[history.length - 1];
+      if (previous) previous(); else results.innerHTML = "";
+    }
+
+    function backButton() {
+      return history.length > 1 ? `<button class="back" id="back-btn">← Back</button>` : "";
+    }
+
+    function wireBackButton() {
+      const btn = document.getElementById("back-btn");
+      if (btn) btn.addEventListener("click", goBack);
+    }
+
+
+    /* =====================================================================
+       SEARCH BAR: modes, suggestions and submit
+       ===================================================================== */
+    function setMode(newMode) {
+      mode = newMode;
+      input.placeholder = MODES[mode];
+      document.querySelectorAll(".mode").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+    }
+    setMode("shows");
+
+    document.querySelectorAll(".mode").forEach((btn) => {
+      btn.addEventListener("click", () => { setMode(btn.dataset.mode); input.focus(); });
+    });
+
+    document.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        setMode(chip.dataset.mode);
+        input.value = chip.dataset.q;
+        runSearch(chip.dataset.q);
+      });
+    });
+
+    // Enter key or Search button
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const query = input.value.trim();
+      if (query) runSearch(query);
+    });
+
+    function runSearch(query) {
+      results.innerHTML = "";
+      if (mode === "shows")  safely(() => searchShowByName(query));
+      if (mode === "actors") safely(() => searchActors(query));
+      if (mode === "imdb")   safely(() => lookupImdb(query));
+    }
+
+    document.getElementById("home-btn").addEventListener("click", () => {
+      history = []; results.innerHTML = ""; clearStatus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      input.focus();
+    });
+
+
+    /* =====================================================================
+       FEATURE 1 – SEARCH A SHOW BY NAME
+       Endpoint: /singlesearch/shows?q=  → best match, then load it by ID
+       ===================================================================== */
+    async function searchShowByName(name) {
+      setLoading("Searching…");
+      const match = await getJSON(`/singlesearch/shows?q=${encodeURIComponent(name)}`);
+      if (!match) return setStatus(`No show found for “${name}”. Check the spelling and try again.`);
+      await openShow(match.id, true);
+    }
+
+
+    /* =====================================================================
+       FEATURE 2 – LOOK UP A SHOW BY IMDb ID
+       Endpoint: /lookup/shows?imdb=tt…
+       ===================================================================== */
+    async function lookupImdb(text) {
+      // Accepts "tt0903747" or a full link like "https://www.imdb.com/title/tt0903747/"
+      const found = text.match(/tt\d+/i);
+      if (!found) return setStatus("That doesn't look like an IMDb ID. It should start with “tt”, e.g. tt0903747.");
+
+      const imdbId = found[0].toLowerCase();
+      setLoading(`Looking up ${imdbId}…`);
+      const show = await getJSON(`/lookup/shows?imdb=${imdbId}`);
+      if (!show) return setStatus(`No TV show on TVmaze has the IMDb ID ${imdbId}.`);
+      await openShow(show.id, true);
+    }
+
+
+    /* =====================================================================
+       FEATURE 3 – FULL SHOW DETAILS
+       Endpoints (sent at the same time with Promise.all):
+         /shows/:id?embed[]=episodes&embed[]=cast&embed[]=nextepisode
+         /shows/:id/crew
+         /shows/:id/seasons
+         /shows/:id/images
+       ===================================================================== */
+    async function openShow(id, fresh = false) {
+      setLoading("Loading show…");
+
+      // Promise.all sends all four requests at once and waits until every one has answered
+      const [show, crew, seasons, images] = await Promise.all([
+        getJSON(`/shows/${id}?embed[]=episodes&embed[]=cast&embed[]=nextepisode`),
+        getJSON(`/shows/${id}/crew`),
+        getJSON(`/shows/${id}/seasons`),
+        getJSON(`/shows/${id}/images`),
+      ]);
+      if (!show) return setStatus("Show not found.");
+
+      clearStatus();
+      // One object holding everything about this show, plus which tab/season is open
+      const data = {
+        show,
+        episodes: show._embedded?.episodes || [],
+        cast:     show._embedded?.cast || [],
+        next:     show._embedded?.nextepisode || null,
+        crew:     crew || [],
+        seasons:  seasons || [],
+        images:   images || [],
+        tab: "episodes",
+        season: null,
+      };
+      navigate(() => renderShow(data), fresh);
+    }
+
+    function renderShow(data) {
+      const { show, episodes, cast, crew, seasons, images, next } = data;
+
+      const poster   = show.image ? `<img class="poster" src="${show.image.original || show.image.medium}" alt="">` : "";
+      const bgImage  = images.find((img) => img.type === "background");
+      const backdrop = bgImage ? `<div class="backdrop" style="background-image:url('${bgImage.resolutions.original.url}')"></div>` : "";
+      const network  = show.network?.name || show.webChannel?.name || "—";
+      const rating   = show.rating?.average ? show.rating.average + " / 10" : "—";
+      const saved    = isInWatchlist(show.id);
+
+      results.innerHTML = `
+        ${backButton()}
+        <section class="show-hero">
+          ${backdrop}
+          <div class="inner">
+            ${poster}
+            <div>
+              <h2>${esc(show.name)}</h2>
+              <div class="meta">
+                <div>Years<strong>${years(show)}</strong></div>
+                <div>Network<strong>${esc(network)}</strong></div>
+                <div>Status<strong>${esc(show.status || "—")}</strong></div>
+                <div>Rating<strong>${rating}</strong></div>
+                <div>Episodes<strong>${episodes.length}</strong></div>
+              </div>
+              <div class="genres">${show.genres.map((g) => `<span class="genre">${esc(g)}</span>`).join("")}</div>
+              <p class="summary">${esc(plainText(show.summary) || "No summary available.")}</p>
+              <div class="actions">
+                <button class="btn ${saved ? "saved" : ""}" id="watch-toggle">${saved ? "✓ In watchlist" : "+ Add to watchlist"}</button>
+                <button class="btn secondary" id="random-btn" ${episodes.length ? "" : "disabled"}>Random episode</button>
+                ${show.officialSite ? `<a class="btn secondary" href="${esc(show.officialSite)}" target="_blank" style="text-decoration:none">Official site ↗</a>` : ""}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        ${next ? `
+          <div class="next-ep">
+            <span class="label">Next episode</span>
+            <span class="title">${episodeCode(next)} — ${esc(next.name)}</span>
+            <span class="when">${formatDate(next.airdate)}${next.airtime ? " at " + next.airtime : ""} · ${countdown(next.airdate)}</span>
+          </div>` : ""}
+
+        <div class="tabs" id="show-tabs">
+          ${tabButton("episodes", "Episodes", episodes.length, data.tab)}
+          ${tabButton("cast",     "Cast",     cast.length,     data.tab)}
+          ${tabButton("crew",     "Crew",     crew.length,     data.tab)}
+          ${tabButton("seasons",  "Seasons",  seasons.length,  data.tab)}
+          ${tabButton("gallery",  "Gallery",  images.length,   data.tab)}
+        </div>
+        <div id="tab-content"></div>
+      `;
+
+      wireBackButton();
+
+      document.getElementById("watch-toggle").addEventListener("click", () => {
+        toggleWatchlist(show);
+        renderShow(data);                    // redraw so the button updates
+      });
+
+      // FEATURE 5 – RANDOM EPISODE: pick a random index in the episodes array
+      document.getElementById("random-btn").addEventListener("click", () => {
+        const randomEp = episodes[Math.floor(Math.random() * episodes.length)];
+        openEpisode(randomEp);
+      });
+
+      document.querySelectorAll("#show-tabs .tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          data.tab = btn.dataset.tab;
+          document.querySelectorAll("#show-tabs .tab").forEach((b) => b.classList.toggle("active", b === btn));
+          renderShowTab(data);
+        });
+      });
+
+      renderShowTab(data);
+    }
+
+    function tabButton(key, label, n, active) {
+      return `<button class="tab ${key === active ? "active" : ""}" data-tab="${key}">${label}<span class="n">${n}</span></button>`;
+    }
+
+    function countdown(dateString) {
+      const days = Math.ceil((new Date(dateString) - new Date().setHours(0, 0, 0, 0)) / 86400000);
+      if (days <= 0) return "today";
+      if (days === 1) return "tomorrow";
+      return `in ${days} days`;
+    }
+
+    // Draws whichever sub-tab is open
+    function renderShowTab(data) {
+      const box = document.getElementById("tab-content");
+      if (data.tab === "episodes") renderEpisodesTab(box, data);
+      if (data.tab === "cast")     renderCastTab(box, data);
+      if (data.tab === "crew")     renderCrewTab(box, data);
+      if (data.tab === "seasons")  renderSeasonsTab(box, data);
+      if (data.tab === "gallery")  renderGalleryTab(box, data);
+    }
+
+    // --- Episodes tab: season tabs + episode cards ---
+    function renderEpisodesTab(box, data) {
+      if (!data.episodes.length) { box.innerHTML = emptyState("No episodes listed yet."); return; }
+
+      // Group episodes by season → { 1: [...], 2: [...] }
+      const bySeason = {};
+      for (const ep of data.episodes) (bySeason[ep.season] ||= []).push(ep);
+      const numbers = Object.keys(bySeason);
+      if (!data.season || !bySeason[data.season]) data.season = numbers[0];
+
+      box.innerHTML = `
+        <div class="tabs small" id="season-tabs">
+          ${numbers.map((n) => `<button class="tab ${n === data.season ? "active" : ""}" data-season="${n}">Season ${n}</button>`).join("")}
+        </div>
+        <div class="grid">
+          ${bySeason[data.season].map((ep, i) => `
+            <button class="card" data-ep="${ep.id}" style="animation-delay:${i * 20}ms">
+              <div class="thumb">${ep.image ? `<img src="${ep.image.medium}" alt="" loading="lazy">` : "No image"}<span class="badge">${episodeCode(ep)}</span></div>
+              <div class="body">
+                <h4>${esc(ep.name)}</h4>
+                <div class="info">${formatDate(ep.airdate)}${ep.runtime ? ` · ${ep.runtime} min` : ""}${ep.rating?.average ? ` · ★ ${ep.rating.average}` : ""}</div>
+              </div>
+            </button>`).join("")}
+        </div>`;
+
+      box.querySelectorAll("[data-season]").forEach((btn) => {
+        btn.addEventListener("click", () => { data.season = btn.dataset.season; renderEpisodesTab(box, data); });
+      });
+      box.querySelectorAll("[data-ep]").forEach((card) => {
+        card.addEventListener("click", () => {
+          const ep = data.episodes.find((e) => String(e.id) === card.dataset.ep);
+          openEpisode(ep);
+        });
+      });
+    }
+
+    // --- Cast tab: actor photo + character name ---
+    function renderCastTab(box, data) {
+      if (!data.cast.length) { box.innerHTML = emptyState("No cast information available."); return; }
+      box.innerHTML = `
+        <div class="grid people">
+          ${data.cast.map(({ person, character }, i) => {
+            const img = person.image?.medium || character.image?.medium;
+            return `
+              <button class="card" data-person="${person.id}" style="animation-delay:${i * 20}ms">
+                <div class="thumb portrait">${img ? `<img src="${img}" alt="" loading="lazy">` : "No photo"}</div>
+                <div class="body">
+                  <h4>${esc(person.name)}</h4>
+                  <div class="info">as ${esc(character.name)}</div>
+                </div>
+              </button>`;
+          }).join("")}
+        </div>`;
+      wirePersonLinks(box);
+    }
+
+    // --- Crew tab: grouped by job ("Creator", "Executive Producer", …) ---
+    function renderCrewTab(box, data) {
+      if (!data.crew.length) { box.innerHTML = emptyState("No crew information available."); return; }
+      const byType = {};
+      for (const { type, person } of data.crew) (byType[type] ||= []).push(person);
+      box.innerHTML = `
+        <div class="crew">
+          ${Object.entries(byType).map(([type, people]) => `
+            <div class="crew-group">
+              <h4>${esc(type)}</h4>
+              ${people.map((p) => `<button data-person="${p.id}">${esc(p.name)}</button>`).join("")}
+            </div>`).join("")}
+        </div>`;
+      wirePersonLinks(box);
+    }
+
+    // --- Seasons tab: overview table ---
+    function renderSeasonsTab(box, data) {
+      if (!data.seasons.length) { box.innerHTML = emptyState("No season information available."); return; }
+      // Count how many episodes we actually have per season (episodeOrder from the API is sometimes empty)
+      const counts = {};
+      for (const ep of data.episodes) counts[ep.season] = (counts[ep.season] || 0) + 1;
+
+      box.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <tr><th>Season</th><th>Episodes</th><th>Premiere</th><th>Finale</th><th>Network</th><th></th></tr>
+            ${data.seasons.map((s) => `
+              <tr>
+                <td><strong>Season ${s.number}</strong></td>
+                <td>${s.episodeOrder || counts[s.number] || "—"}</td>
+                <td>${formatDate(s.premiereDate)}</td>
+                <td>${formatDate(s.endDate)}</td>
+                <td>${esc(s.network?.name || s.webChannel?.name || "—")}</td>
+                <td class="link" data-goto-season="${s.number}">View episodes →</td>
+              </tr>`).join("")}
+          </table>
+        </div>`;
+
+      // Clicking "View episodes" jumps to the Episodes tab on that season
+      box.querySelectorAll("[data-goto-season]").forEach((cell) => {
+        cell.addEventListener("click", () => {
+          data.tab = "episodes";
+          data.season = cell.dataset.gotoSeason;
+          renderShow(data);
+        });
+      });
+    }
+
+    // --- Gallery tab: posters, banners, backgrounds ---
+    function renderGalleryTab(box, data) {
+      if (!data.images.length) { box.innerHTML = emptyState("No images available."); return; }
+      box.innerHTML = `
+        <div class="gallery">
+          ${data.images.map((img) => {
+            const small = img.resolutions.medium?.url || img.resolutions.original.url;
+            return `
+              <a href="${img.resolutions.original.url}" target="_blank" title="Open full size">
+                <img src="${small}" alt="" loading="lazy">
+                <span class="badge">${esc(img.type || "image")}</span>
+              </a>`;
+          }).join("")}
+        </div>`;
+    }
+
+    function emptyState(text) { return `<div class="empty">${esc(text)}</div>`; }
+
+    function wirePersonLinks(container) {
+      container.querySelectorAll("[data-person]").forEach((el) => {
+        el.addEventListener("click", () => { closeEpisode(); safely(() => openActor(el.dataset.person)); });
+      });
+    }
+
+
+    /* =====================================================================
+       EPISODE POPUP (+ guest cast)
+       Endpoint: /episodes/:id/guestcast
+       ===================================================================== */
+    function openEpisode(ep) {
+      modal.innerHTML = `
+        <button class="close" id="close-modal" aria-label="Close">×</button>
+        <div class="hero-img">${ep.image ? `<img src="${ep.image.original || ep.image.medium}" alt="">` : ""}</div>
+        <div class="content">
+          <div class="code">${episodeCode(ep)}</div>
+          <h3>${esc(ep.name)}</h3>
+          <div class="info">${formatDate(ep.airdate)}${ep.runtime ? ` · ${ep.runtime} min` : ""}${ep.rating?.average ? ` · ★ ${ep.rating.average}` : ""}</div>
+          <p>${esc(plainText(ep.summary) || "No summary available for this episode.")}</p>
+          <h5>Guest stars</h5>
+          <div class="guest-list" id="guest-list"><div class="spinner"></div></div>
+        </div>`;
+      overlay.classList.add("open");
+      document.getElementById("close-modal").addEventListener("click", closeEpisode);
+
+      // Load guest cast in the background – the popup is already visible
+      getJSON(`/episodes/${ep.id}/guestcast`)
+        .then((guests) => {
+          const list = document.getElementById("guest-list");
+          if (!list) return;                                 // popup was closed meanwhile
+          if (!guests || !guests.length) { list.innerHTML = `<span class="info">No guest stars listed.</span>`; return; }
+          list.innerHTML = guests.map(({ person, character }) =>
+            `<button class="guest" data-person="${person.id}">${esc(person.name)} <span>as ${esc(character.name)}</span></button>`).join("");
+          wirePersonLinks(list);
+        })
+        .catch(() => {
+          const list = document.getElementById("guest-list");
+          if (list) list.innerHTML = `<span class="info">Couldn't load guest stars.</span>`;
+        });
+    }
+
+    function closeEpisode() { overlay.classList.remove("open"); }
+
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeEpisode(); });   // click outside
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeEpisode(); });  // Esc key
+
+
+    /* =====================================================================
+       FEATURE 4 – SEARCH FOR ACTORS
+       Endpoints: /search/people?q=
+                  /people/:id
+                  /people/:id/castcredits?embed[]=show&embed[]=character
+       ===================================================================== */
+    async function searchActors(name) {
+      setLoading("Searching actors…");
+      const matches = await getJSON(`/search/people?q=${encodeURIComponent(name)}`);
+      if (!matches || !matches.length) return setStatus(`No actors found for “${name}”.`);
+      clearStatus();
+      navigate(() => renderPeopleResults(name, matches.map((m) => m.person)), true);
+    }
+
+    function renderPeopleResults(query, people) {
+      results.innerHTML = `
+        ${backButton()}
+        <div class="page-title"><h2>Actors matching “${esc(query)}”</h2><span>${people.length} results</span></div>
+        <div class="grid people">
+          ${people.map((p, i) => `
+            <button class="card" data-person="${p.id}" style="animation-delay:${i * 20}ms">
+              <div class="thumb portrait">${p.image ? `<img src="${p.image.medium}" alt="" loading="lazy">` : "No photo"}</div>
+              <div class="body">
+                <h4>${esc(p.name)}</h4>
+                <div class="info">${p.country?.name ? esc(p.country.name) : "&nbsp;"}</div>
+              </div>
+            </button>`).join("")}
+        </div>`;
+      wireBackButton();
+      wirePersonLinks(results);
+    }
+
+    async function openActor(id) {
+      setLoading("Loading actor…");
+      const [person, credits] = await Promise.all([
+        getJSON(`/people/${id}`),
+        getJSON(`/people/${id}/castcredits?embed[]=show&embed[]=character`),
+      ]);
+      if (!person) return setStatus("Actor not found.");
+
+      // An actor can play several characters in one show, so group credits by show
+      const showsById = {};
+      for (const credit of credits || []) {
+        const show = credit._embedded?.show;
+        if (!show) continue;
+        if (!showsById[show.id]) showsById[show.id] = { show, characters: [] };
+        const character = credit._embedded?.character?.name;
+        if (character) showsById[show.id].characters.push(character);
+      }
+      // Newest shows first
+      const shows = Object.values(showsById).sort((a, b) => (b.show.premiered || "").localeCompare(a.show.premiered || ""));
+
+      clearStatus();
+      navigate(() => renderActor(person, shows));
+    }
+
+    function renderActor(person, shows) {
+      const age = person.birthday ? ageFrom(person.birthday, person.deathday) : null;
+      results.innerHTML = `
+        ${backButton()}
+        <section class="person-head">
+          ${person.image ? `<img src="${person.image.medium}" alt="">` : `<div class="no-img">No photo</div>`}
+          <div>
+            <h2>${esc(person.name)}</h2>
+            <div class="meta">
+              <div>Born<strong>${person.birthday ? formatDate(person.birthday) : "—"}</strong></div>
+              ${person.deathday ? `<div>Died<strong>${formatDate(person.deathday)}</strong></div>` : ""}
+              ${age !== null ? `<div>Age<strong>${age}</strong></div>` : ""}
+              <div>Country<strong>${esc(person.country?.name || "—")}</strong></div>
+              <div>Shows<strong>${shows.length}</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="page-title"><h2>Appears in</h2></div>
+        ${shows.length ? `
+          <div class="grid shows">
+            ${shows.map(({ show, characters }, i) => showCard(show, `as ${characters.join(", ") || "—"}`, i)).join("")}
+          </div>` : emptyState("No show credits found.")}
+      `;
+      wireBackButton();
+      wireShowLinks(results);
+    }
+
+    function ageFrom(birthday, deathday) {
+      const end = deathday ? new Date(deathday) : new Date();
+      const b = new Date(birthday);
+      let age = end.getFullYear() - b.getFullYear();
+      if (end < new Date(end.getFullYear(), b.getMonth(), b.getDate())) age--;
+      return age;
+    }
+
+    // A small poster card used on the actor page and the watchlist
+    function showCard(show, subtitle, i, removable = false) {
+      return `
+        <div class="card" data-show="${show.id}" style="animation-delay:${i * 20}ms">
+          ${removable ? `<button class="remove" data-remove="${show.id}" title="Remove from watchlist">×</button>` : ""}
+          <div class="thumb portrait">${show.image ? `<img src="${show.image.medium}" alt="" loading="lazy">` : "No image"}</div>
+          <div class="body">
+            <h4>${esc(show.name)}</h4>
+            <div class="info">${esc(subtitle)}</div>
+          </div>
+        </div>`;
+    }
+
+    function wireShowLinks(container) {
+      container.querySelectorAll("[data-show]").forEach((el) => {
+        el.addEventListener("click", () => safely(() => openShow(el.dataset.show)));
+      });
+    }
+
+
+    /* =====================================================================
+       FEATURE 6 – WATCHLIST (saved in the browser with localStorage)
+       localStorage only stores text, so we convert the list to JSON text and back.
+       ===================================================================== */
+    const WATCH_KEY = "episodely-watchlist";
+
+    function loadWatchlist() {
+      try { return JSON.parse(localStorage.getItem(WATCH_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveWatchlist(list) {
+      try { localStorage.setItem(WATCH_KEY, JSON.stringify(list)); } catch { /* storage blocked – ignore */ }
+      updateWatchCount();
+    }
+
+    function isInWatchlist(id) { return loadWatchlist().some((s) => s.id === id); }
+
+    function toggleWatchlist(show) {
+      let list = loadWatchlist();
+      if (isInWatchlist(show.id)) {
+        list = list.filter((s) => s.id !== show.id);
+      } else {
+        // Only save the few fields we need to draw a card, not the whole show
+        list.push({ id: show.id, name: show.name, image: show.image, premiered: show.premiered, ended: show.ended });
+      }
+      saveWatchlist(list);
+    }
+
+    function updateWatchCount() {
+      document.getElementById("watch-count").textContent = loadWatchlist().length;
+    }
+
+    function renderWatchlist() {
+      const list = loadWatchlist();
+      results.innerHTML = `
+        <div class="page-title"><h2>Your watchlist</h2><span>${list.length} ${list.length === 1 ? "show" : "shows"}</span></div>
+        ${list.length ? `
+          <div class="grid shows">${list.map((s, i) => showCard(s, years(s), i, true)).join("")}</div>`
+          : `<div class="empty"><strong>Your watchlist is empty</strong>Open any show and click “Add to watchlist”.</div>`}
+      `;
+      results.querySelectorAll("[data-remove]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();                // don't also open the show underneath
+          saveWatchlist(loadWatchlist().filter((s) => String(s.id) !== btn.dataset.remove));
+          renderWatchlist();
+        });
+      });
+      wireShowLinks(results);
+    }
+
+    document.getElementById("watchlist-btn").addEventListener("click", () => {
+      clearStatus();
+      navigate(renderWatchlist, true);
+    });
+
+    updateWatchCount();
+  </script>
+</body>
+</html>
