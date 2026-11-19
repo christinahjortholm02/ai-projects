@@ -3,8 +3,8 @@
 //  Three features: clock + greeting, daily focus, background photo
 // =====================================================
 
-// Change this to your own name!
-const NAME = "Christina";
+// Placeholder name: change this to your own name to personalise the greeting.
+const NAME = "friend";
 
 
 // =====================================================
