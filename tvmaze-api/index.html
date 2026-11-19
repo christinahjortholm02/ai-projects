@@ -323,7 +323,7 @@
           Episodely
         </button>
         <div class="nav-links">
-          <a href="https://www.tvmaze.com/api" target="_blank">API by TVmaze</a>
+          <a href="https://www.tvmaze.com/api" target="_blank" rel="noopener">API by TVmaze</a>
           <button class="nav-btn" id="watchlist-btn">
             Watchlist <span class="count" id="watch-count">0</span>
           </button>
@@ -367,7 +367,7 @@
   </main>
 
   <footer>
-    <div class="container">Data provided by <a href="https://www.tvmaze.com" target="_blank">TVmaze.com</a></div>
+    <div class="container">Data provided by <a href="https://www.tvmaze.com" target="_blank" rel="noopener">TVmaze.com</a></div>
   </footer>
 
   <!-- ===================== EPISODE POPUP ===================== -->
@@ -418,6 +418,20 @@
     function esc(value) {
       return String(value ?? "").replace(/[&<>"']/g, (c) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    // Only allow normal web links from the API: they must start with "https://" or "http://".
+    // A link like "javascript:alert(1)" would run code when someone clicks it or loads it as an image,
+    // so anything else becomes "" (= no link). Still wrap the result in esc() when it goes into HTML.
+    function safeUrl(value) {
+      const url = String(value ?? "").trim();
+      return /^https?:\/\//i.test(url) ? url : "";
+    }
+
+    // Builds an <img> tag only when the image address is safe; otherwise shows the fallback (e.g. "No image")
+    function imgTag(url, attributes, fallback = "") {
+      const src = safeUrl(url);
+      return src ? `<img src="${esc(src)}" ${attributes}>` : fallback;
     }
 
     // TVmaze summaries contain HTML like "<p><b>Hi</b></p>". DOMParser reads it safely and gives us plain text.
@@ -585,9 +599,13 @@
     function renderShow(data) {
       const { show, episodes, cast, crew, seasons, images, next } = data;
 
-      const poster   = show.image ? `<img class="poster" src="${show.image.original || show.image.medium}" alt="">` : "";
+      const poster   = imgTag(show.image?.original || show.image?.medium, 'class="poster" alt=""');
       const bgImage  = images.find((img) => img.type === "background");
-      const backdrop = bgImage ? `<div class="backdrop" style="background-image:url('${bgImage.resolutions.original.url}')"></div>` : "";
+      const bgUrl    = safeUrl(bgImage?.resolutions?.original?.url);
+      // Inside CSS url('...') a quote or bracket would end the address early, so we %-encode those (still the same link)
+      const bgCss    = bgUrl.replace(/['"()\\\s]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
+      const backdrop = bgUrl ? `<div class="backdrop" style="background-image:url('${esc(bgCss)}')"></div>` : "";
+      const official = safeUrl(show.officialSite);
       const network  = show.network?.name || show.webChannel?.name || "—";
       const rating   = show.rating?.average ? show.rating.average + " / 10" : "—";
       const saved    = isInWatchlist(show.id);
@@ -612,7 +630,7 @@
               <div class="actions">
                 <button class="btn ${saved ? "saved" : ""}" id="watch-toggle">${saved ? "✓ In watchlist" : "+ Add to watchlist"}</button>
                 <button class="btn secondary" id="random-btn" ${episodes.length ? "" : "disabled"}>Random episode</button>
-                ${show.officialSite ? `<a class="btn secondary" href="${esc(show.officialSite)}" target="_blank" style="text-decoration:none">Official site ↗</a>` : ""}
+                ${official ? `<a class="btn secondary" href="${esc(official)}" target="_blank" rel="noopener" style="text-decoration:none">Official site ↗</a>` : ""}
               </div>
             </div>
           </div>
@@ -697,7 +715,7 @@
         <div class="grid">
           ${bySeason[data.season].map((ep, i) => `
             <button class="card" data-ep="${ep.id}" style="animation-delay:${i * 20}ms">
-              <div class="thumb">${ep.image ? `<img src="${ep.image.medium}" alt="" loading="lazy">` : "No image"}<span class="badge">${episodeCode(ep)}</span></div>
+              <div class="thumb">${imgTag(ep.image?.medium, 'alt="" loading="lazy"', "No image")}<span class="badge">${episodeCode(ep)}</span></div>
               <div class="body">
                 <h4>${esc(ep.name)}</h4>
                 <div class="info">${formatDate(ep.airdate)}${ep.runtime ? ` · ${ep.runtime} min` : ""}${ep.rating?.average ? ` · ★ ${ep.rating.average}` : ""}</div>
@@ -725,7 +743,7 @@
             const img = person.image?.medium || character.image?.medium;
             return `
               <button class="card" data-person="${person.id}" style="animation-delay:${i * 20}ms">
-                <div class="thumb portrait">${img ? `<img src="${img}" alt="" loading="lazy">` : "No photo"}</div>
+                <div class="thumb portrait">${imgTag(img, 'alt="" loading="lazy"', "No photo")}</div>
                 <div class="body">
                   <h4>${esc(person.name)}</h4>
                   <div class="info">as ${esc(character.name)}</div>
@@ -791,10 +809,12 @@
       box.innerHTML = `
         <div class="gallery">
           ${data.images.map((img) => {
-            const small = img.resolutions.medium?.url || img.resolutions.original.url;
+            const full  = safeUrl(img.resolutions?.original?.url);
+            const small = safeUrl(img.resolutions?.medium?.url) || full;
+            if (!full) return "";                 // no safe link for this image -> leave it out
             return `
-              <a href="${img.resolutions.original.url}" target="_blank" title="Open full size">
-                <img src="${small}" alt="" loading="lazy">
+              <a href="${esc(full)}" target="_blank" rel="noopener" title="Open full size">
+                <img src="${esc(small)}" alt="" loading="lazy">
                 <span class="badge">${esc(img.type || "image")}</span>
               </a>`;
           }).join("")}
@@ -817,7 +837,7 @@
     function openEpisode(ep) {
       modal.innerHTML = `
         <button class="close" id="close-modal" aria-label="Close">×</button>
-        <div class="hero-img">${ep.image ? `<img src="${ep.image.original || ep.image.medium}" alt="">` : ""}</div>
+        <div class="hero-img">${imgTag(ep.image?.original || ep.image?.medium, 'alt=""')}</div>
         <div class="content">
           <div class="code">${episodeCode(ep)}</div>
           <h3>${esc(ep.name)}</h3>
@@ -872,7 +892,7 @@
         <div class="grid people">
           ${people.map((p, i) => `
             <button class="card" data-person="${p.id}" style="animation-delay:${i * 20}ms">
-              <div class="thumb portrait">${p.image ? `<img src="${p.image.medium}" alt="" loading="lazy">` : "No photo"}</div>
+              <div class="thumb portrait">${imgTag(p.image?.medium, 'alt="" loading="lazy"', "No photo")}</div>
               <div class="body">
                 <h4>${esc(p.name)}</h4>
                 <div class="info">${p.country?.name ? esc(p.country.name) : "&nbsp;"}</div>
@@ -912,7 +932,7 @@
       results.innerHTML = `
         ${backButton()}
         <section class="person-head">
-          ${person.image ? `<img src="${person.image.medium}" alt="">` : `<div class="no-img">No photo</div>`}
+          ${imgTag(person.image?.medium, 'alt=""', `<div class="no-img">No photo</div>`)}
           <div>
             <h2>${esc(person.name)}</h2>
             <div class="meta">
@@ -948,7 +968,7 @@
       return `
         <div class="card" data-show="${show.id}" style="animation-delay:${i * 20}ms">
           ${removable ? `<button class="remove" data-remove="${show.id}" title="Remove from watchlist">×</button>` : ""}
-          <div class="thumb portrait">${show.image ? `<img src="${show.image.medium}" alt="" loading="lazy">` : "No image"}</div>
+          <div class="thumb portrait">${imgTag(show.image?.medium, 'alt="" loading="lazy"', "No image")}</div>
           <div class="body">
             <h4>${esc(show.name)}</h4>
             <div class="info">${esc(subtitle)}</div>
