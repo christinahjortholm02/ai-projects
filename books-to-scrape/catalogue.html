@@ -6,7 +6,7 @@
 <title>The Library · Books to Scrape</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
 <style>
   /* ---------- 1. Design tokens: change these to restyle the whole page ---------- */
   :root {
@@ -239,7 +239,7 @@ async function loadBooks() {
     if (data.length < 1000) break;
   }
   if (!all.length) showNotice("Connected, but no rows came back. Check that the table has data and that the read policy exists.");
-  else if (!all.some(b => b.image_url)) showNotice("No cover images found. Run add_image_column.sql in Supabase, then run  python3 supabase_books.py write  again to fill in the covers.");
+  else if (!all.some(b => b.image_url)) showNotice("No cover images found. Run schema.sql in Supabase (it includes the image_url column), then run  python3 supabase_books.py write  again to fill in the covers.");
   return all;
 }
 

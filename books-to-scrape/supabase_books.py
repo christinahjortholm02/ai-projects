@@ -22,6 +22,7 @@ def write(limit=None):
             "rating": int(r["rating"]),
             "availability": r["availability"],
             "url": r["url"],
+            "image_url": r.get("image_url"),
         }
     books = list(books.values())
     for i in range(0, len(books), 500):

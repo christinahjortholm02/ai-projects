@@ -6,3 +6,8 @@ node_modules/
 *.pem
 .vscode/
 .idea/
+__pycache__/
+*.pyc
+.venv/
+venv/
+books-to-scrape/books_test.csv

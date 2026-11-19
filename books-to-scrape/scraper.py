@@ -21,6 +21,8 @@ from bs4 import BeautifulSoup
 BASE_URL = "https://books.toscrape.com/catalogue/"
 START_PAGE = "page-1.html"
 OUTPUT_FILE = "books.csv"
+MAX_ATTEMPTS = 3      # how many times to try downloading a page before giving up
+RETRY_PAUSE = 2       # seconds to wait between attempts
 
 # The site writes the rating as a word inside a CSS class, e.g. class="star-rating Three".
 # This dictionary turns that word into a number we can sort and calculate with.
@@ -28,10 +30,20 @@ RATING_WORDS = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
 
 
 def get_page(url):
-    """Download one page and return it as a BeautifulSoup object we can search in."""
-    response = requests.get(url, timeout=10)
-    response.raise_for_status()          # stop with an error if the page didn't load (e.g. 404)
-    response.encoding = "utf-8"          # makes the £ sign come out correctly
+    """Download one page and return it as a BeautifulSoup object we can search in.
+    If the download fails (no internet, timeout, server error), try again up to MAX_ATTEMPTS times."""
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()      # treat a bad status (e.g. 404, 500) as an error too
+            break                            # it worked -> leave the retry loop
+        except requests.RequestException as error:
+            if attempt == MAX_ATTEMPTS:      # out of attempts -> give up and show the error
+                raise
+            print(f"  Attempt {attempt} failed ({error}). Trying again in {RETRY_PAUSE} s...")
+            time.sleep(RETRY_PAUSE)          # short pause before the next try
+
+    response.encoding = "utf-8"              # makes the £ sign come out correctly
     return BeautifulSoup(response.text, "html.parser")
 
 
